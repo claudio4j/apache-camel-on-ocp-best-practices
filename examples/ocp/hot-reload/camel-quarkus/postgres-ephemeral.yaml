@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql
+spec:
+  selector:
+    matchLabels:
+      app: postgresql
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgresql
+    spec:
+      containers:
+        - name: postgres
+          image: mirror.gcr.io/library/postgres:16
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          env:
+          - name: POSTGRES_HOST_AUTH_METHOD
+            value: scram-sha-256
+          - name: POSTGRES_USER
+            value: postgres_user
+          - name: POSTGRES_PASSWORD
+            value: admin123
+          - name: POSTGRES_DB
+            value: testdb
+          - name: PGDATA
+            value: /db-data/pgdata
+          volumeMounts:
+            - mountPath: /db-data
+              name: postgresdb
+      volumes:
+        - name: postgresdb
+          emptyDir: {}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgresql
+spec:
+  selector:
+    app: postgresql
+  ports:
+    - port: 5432
+  type: LoadBalancer

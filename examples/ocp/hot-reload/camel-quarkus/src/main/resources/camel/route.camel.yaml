@@ -1,0 +1,21 @@
+- beans:
+  - name: dsBean
+    type: "org.apache.commons.dbcp2.BasicDataSource"
+    properties:
+      username: '{{secret:secret-basic-auth/username}}'
+      password: '{{secret:secret-basic-auth/password}}'
+      url: 'jdbc:postgresql://{{secret:secret-basic-auth/host}}:5432/testdb'
+      driverClassName: 'org.postgresql.Driver'
+- route:
+    from:
+      uri: timer:tick?period=60000
+      steps:
+      - setBody:
+          expression:
+            simple:
+              expression: SELECT * FROM foo
+      - to:
+          uri: jdbc
+          parameters:
+            dataSourceName: "dsBean"
+      - log: ${body}
