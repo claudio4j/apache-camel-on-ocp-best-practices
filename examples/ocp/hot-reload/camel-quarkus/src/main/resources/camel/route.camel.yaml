@@ -4,11 +4,11 @@
     properties:
       username: '{{secret:secret-basic-auth/username}}'
       password: '{{secret:secret-basic-auth/password}}'
-      url: 'jdbc:postgresql://{{secret:secret-basic-auth/host}}:5432/testdb'
+      url: 'jdbc:postgresql://{{secret:secret-basic-auth/host}}:{{secret:secret-basic-auth/port:30765}}/testdb'
       driverClassName: 'org.postgresql.Driver'
 - route:
     from:
-      uri: timer:tick?period=60000
+      uri: timer:YAML?period=60000
       steps:
       - setBody:
           expression:
