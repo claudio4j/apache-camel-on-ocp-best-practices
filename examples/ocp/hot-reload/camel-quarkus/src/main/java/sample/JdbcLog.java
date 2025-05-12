@@ -4,17 +4,33 @@ import javax.sql.DataSource;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 public class JdbcLog extends RouteBuilder {
 
-    @Inject
-    DataSource datasource() {
+    @jakarta.inject.Inject
+    DataSource datasource(
+        // @PropertyInject("{{secret:secret-basic-auth/username}}") String username,
+        // @PropertyInject("{{secret:secret-basic-auth/password}}") String password,
+        // @PropertyInject("{{secret:secret-basic-auth/host}}") String host,
+        // @PropertyInject("{{secret:secret-basic-auth/port:5432}}") int port) {
+        // quarkus way 1
+        // @ConfigProperty(name = "{{secret:secret-basic-auth/username}}") Provider<String> username,
+        // @ConfigProperty(name = "{{secret:secret-basic-auth/password}}") Provider<String> password,
+        // @ConfigProperty(name = "{{secret:secret-basic-auth/host}}") Provider<String> host,
+        // @ConfigProperty(name = "{{secret:secret-basic-auth/port:5432}}") Provider<Integer> port) {
+        // quarkus way 2
+        @ConfigProperty(name = "${username}") Provider<String> username,
+        @ConfigProperty(name = "${password}") Provider<String> password,
+        @ConfigProperty(name = "${host}") Provider<String> host,
+        @ConfigProperty(name = "${port:5432}") Provider<Integer> port) {
         org.apache.commons.dbcp2.BasicDataSource ds = new org.apache.commons.dbcp2.BasicDataSource();
-        ds.setUsername("{{secret:secret-basic-auth/username}}");
-        ds.setPassword("{{secret:secret-basic-auth/password}}");
-        ds.setUrl("jdbc:postgresql://{{secret:secret-basic-auth/host}}:{{secret:secret-basic-auth/port:5432}}/testdb");
+        System.out.println(">>> creating datasource");
+        ds.setUsername(username.get());
+        ds.setPassword(password.get());
+        ds.setUrl("jdbc:postgresql://" + host.get() + ":" + port.get() + "/testdb");
         ds.setDriverClassName("org.postgresql.Driver");
         return ds;
     }
@@ -27,10 +43,8 @@ public class JdbcLog extends RouteBuilder {
             .to("jdbc:datasource")
             .process(e -> e.getContext().getRegistry().findByType(DataSource.class).forEach(b -> {
                 org.apache.commons.dbcp2.BasicDataSource ds = (BasicDataSource) b;
-                log.info(">> datasource user: " + ds.getUserName());
+                log.info(">> registry DataSource.getUserName(): " + ds.getUserName());
             }))
-            .log("db username: {{secret:secret-basic-auth/username}} - body: ${body}");
-
-
+            .log("resolving username: {{secret:secret-basic-auth/username}} - body: ${body}");
     }
 }
